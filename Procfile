@@ -1,1 +1,1 @@
-web: gunicorn evaluation:app
+web: python evaluation.py 
