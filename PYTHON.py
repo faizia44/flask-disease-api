@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, send_from_directory
+from flask_cors import CORS
 import torch
 from torchvision import models, transforms
 from PIL import Image
@@ -8,8 +9,11 @@ import os
 # Configuration
 # -------------------------------
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-UPLOAD_FOLDER = 'uploads'
+UPLOAD_FOLDER = os.path.join(os.getcwd(), 'uploads')
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
 app = Flask(__name__)
+CORS(app)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # -------------------------------
@@ -17,7 +21,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # -------------------------------
 class_names_map = {
     'Liver Disease': ['Jaundiced Liver', 'Normal Liver'],
-    'Skin Disease': ['Acne', 'Chickenpox','Measles', 'Monkeypox'],  # example
+    'Skin Disease': ['Acne', 'Chickenpox', 'Measles', 'Monkeypox'],
 }
 
 # -------------------------------
@@ -33,10 +37,10 @@ def load_model_for_disease(disease):
     class_names = []
 
     if disease == 'Liver Disease':
-        model_path = r'C:\Users\hppc\Desktop\flask sevrer\models\jAUNDICE_resnet34(1).pth'
+        model_path = os.path.join('models', 'jAUNDICE_resnet34(1).pth')
         class_names = class_names_map[disease]
     elif disease == 'Skin Disease':
-        model_path = r'C:\Users\hppc\Desktop\flask sevrer\models\skinm_resnet34.pth'
+        model_path = os.path.join('models', 'skinm_resnet34.pth')
         class_names = class_names_map[disease]
     else:
         raise ValueError(f"Unknown disease: {disease}")
@@ -97,7 +101,7 @@ def predict():
             'uid': uid,
             'filename': image_file.filename,
             'prediction': predicted_class,
-            'image_url': f"/uploads/{disease}/{uid}/{image_file.filename}"
+            'image_url': request.host_url.rstrip('/') + f"/uploads/{disease}/{uid}/{image_file.filename}"
         })
 
     except Exception as e:
@@ -120,4 +124,5 @@ def uploaded_file(disease, uid, filename):
 # Run Server
 # -------------------------------
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    port = int(os.environ.get("PORT", 3000))
+    app.run(host='0.0.0.0', port=port)
